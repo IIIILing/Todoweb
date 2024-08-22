@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务列表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #c4f4f3;
+            padding: 10px;
+            /* border-right: 1px solid #ccc; */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+
+        }
+        .sidebar ul li {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            display: none; /* Initially hide all content sections */
+        }
+        .active {
+            display: block; /* Display active content section */
+        }
+        .task-list {
+            list-style: none;;
+            padding: 0;
+        }
+        .task-list li {
+            padding: 10px;
+            border-bottom: 1px solid #cccccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        input[type="button"] {
+            padding: 10px 15px;
+        }
+        .done {
+            text-decoration: line-through;
+        }
+        .unfinished {
+            color: grey;
+        }
+        .clearButton {
+            bottom: 10px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            background-color:#d1f4ef
+
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <ul>
+            <li onclick="showSection('today')">我的一天</li>
+            <hr color="grey">
+            <li onclick="showSection('important')">重要</li>
+            <hr color="grey">
+            <li onclick="showSection('planned')">计划内</li>
+            <hr color="grey">
+            <li onclick="showSection('assigned')">已分配给我</li>
+            <hr color="grey">
+            <li onclick="showSection('tasks')">任务</li>
+            <hr color="grey">
+        </ul>
+        <button onclick="clearTasks()" class = "clearButton">清空任务</button>
+    </div>
+
+    <div id="today" class="content active">
+        <h1>我的一天</h1>
+        <input type="text" id="taskInputToday" placeholder="添加新任务"/>
+        <input type="button" value="添加" onclick="addTask('taskInputToday', 'taskListToday')" />
+        <ul class="task-list" id="taskListToday"></ul>
+    </div>
+
+    <div id="important" class="content">
+        <h1>重要任务</h1>
+        <input type="text" id="taskInputImportant" placeholder="添加新重要任务"/>
+        <input type="button" value="添加" onclick="addTask('taskInputImportant', 'taskListImportant')" />
+        <ul class="task-list" id="taskListImportant"></ul>
+    </div>
+
+    <div id="planned" class="content">
+        <h1>计划内任务</h1>
+        <input type="text" id="taskInputPlanned" placeholder="添加新计划内任务"/>
+        <input type="button" value="添加" onclick="addTask('taskInputPlanned', 'taskListPlanned')" />
+        <ul class="task-list" id="taskListPlanned"></ul>
+    </div>
+
+    <div id="assigned" class="content">
+        <h1>已分配给我的任务</h1>
+        <input type="text" id="taskInputAssigned" placeholder="添加新分配任务"/>
+        <input type="button" value="添加" onclick="addTask('taskInputAssigned', 'taskListAssigned')" />
+        <ul class="task-list" id="taskListAssigned"></ul>
+    </div>
+
+    <div id="tasks" class="content">
+        <h1>所有任务</h1>
+        <input type="text" id="taskInputAll" placeholder="添加新任务"/>
+        <input type="button" value="添加" onclick="addTask('taskInputAll', 'taskListAll')" />
+        <ul class="task-list" id="taskListAll"></ul>
+    </div>
+
+    <script>
+        function addTask(inputId, listId) {
+            const taskInput = document.getElementById(inputId);
+            const taskText = taskInput.value.trim();
+            if (taskText) {
+                const listItem = document.createElement('li');
+                
+                listItem.innerHTML = `
+                    <span>${taskText}</span>
+                    <div>
+                        <input type="button" value="完成" onclick="markDone(this)"/>
+                        <input type="button" value="未完成" onclick="markUnfinished(this)"/>
+                    </div>
+                `;
+                document.getElementById(listId).appendChild(listItem);
+                taskInput.value = '';
+                saveTasks();
+            }
+        }
+
+        function markDone(button) {
+            const listItem = button.closest('li');
+            listItem.querySelector('span').classList.add('done');
+        }
+
+        function markUnfinished(button) {
+            const listItem = button.closest('li');
+            listItem.querySelector('span').classList.remove('done');
+            listItem.querySelector('span').classList.add('unfinished');
+        }
+
+        function saveTasks() {
+            const taskSections = ['Today', 'Important', 'Planned', 'Assigned', 'All'];
+            taskSections.forEach(section => {
+                const tasks = [];
+                const list = document.getElementById(`taskList${section}`);
+                list.querySelectorAll('li').forEach(item => {
+                    const taskText = item.querySelector('span').textContent;
+                    const isDone = item.querySelector('span').classList.contains('done');
+                    tasks.push({ text: taskText, done: isDone });
+                });
+                localStorage.setItem(`tasks${section}`, JSON.stringify(tasks));
+            });
+        }
+
+        function loadTasks() {
+            const taskSections = ['Today', 'Important', 'Planned', 'Assigned', 'All'];
+            taskSections.forEach(section => {
+                const tasks = JSON.parse(localStorage.getItem(`tasks${section}`) || '[]');
+                tasks.forEach(task => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `
+                        <span class="${task.done ? 'done' : ''}">${task.text}</span>
+                        <div>
+                            <input type="button" value="完成" onclick="markDone(this)"/>
+                            <input type="button" value="未完成" onclick="markUnfinished(this)"/>
+                        </div>
+                    `;
+                    document.getElementById(`taskList${section}`).appendChild(listItem);
+                });
+            });
+        }
+
+        function clearTasks() {
+            const taskSections = ['Today', 'Important', 'Planned', 'Assigned', 'All'];
+            taskSections.forEach(section => {
+                localStorage.removeItem(`tasks${section}`);
+                document.getElementById(`taskList${section}`).innerHTML = '';
+            });
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.content').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+        }
+
+        // 添加事件监听器以支持回车添加任务
+        function attachEnterKeyListener(inputId, listId) {
+            const taskInput = document.getElementById(inputId);
+            taskInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    addTask(inputId, listId);
+                }
+            });
+        }
+
+        window.onload = function() {
+            loadTasks();
+            attachEnterKeyListener('taskInputToday', 'taskListToday');
+            attachEnterKeyListener('taskInputImportant', 'taskListImportant');
+            attachEnterKeyListener('taskInputPlanned', 'taskListPlanned');
+            attachEnterKeyListener('taskInputAssigned', 'taskListAssigned');
+            attachEnterKeyListener('taskInputAll', 'taskListAll');
+        };
+    </script>
+</body>
+</html>
